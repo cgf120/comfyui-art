@@ -1,0 +1,844 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "ComfyUI Art API",
+    "description": "ComfyUI Art 任务调度系统API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "本地开发服务器"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "根路径",
+        "description": "返回API信息",
+        "responses": {
+          "200": {
+            "description": "成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "欢迎使用ComfyUI Art API"
+                    },
+                    "version": {
+                      "type": "string",
+                      "example": "1.0.0"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "健康检查接口",
+        "description": "检查API服务器的健康状态",
+        "responses": {
+          "200": {
+            "description": "成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["healthy", "unhealthy"],
+                      "example": "healthy"
+                    },
+                    "redis": {
+                      "type": "string",
+                      "enum": ["connected", "disconnected"],
+                      "example": "connected"
+                    },
+                    "scheduler": {
+                      "type": "string",
+                      "enum": ["running", "stopped"],
+                      "example": "running"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prompt": {
+      "post": {
+        "summary": "提交任务接口",
+        "description": "提交一个新的生成任务",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["workflow_id", "input_params"],
+                "properties": {
+                  "workflow_id": {
+                    "type": "string",
+                    "description": "工作流ID",
+                    "example": "12345678-1234-5678-1234-567812345678"
+                  },
+                  "input_params": {
+                    "type": "object",
+                    "description": "输入参数",
+                    "example": {
+                      "prompt": "一只可爱的猫",
+                      "negative_prompt": "模糊，低质量",
+                      "width": 512,
+                      "height": 512
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "task_id": {
+                      "type": "string",
+                      "description": "任务ID",
+                      "example": "12345678-1234-5678-1234-567812345678"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "工作流不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "工作流不存在: 12345678-1234-5678-1234-567812345678"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "提交任务失败: 错误详情"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/task/{task_id}": {
+      "get": {
+        "summary": "获取任务状态接口",
+        "description": "获取指定任务的状态信息",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "description": "任务ID",
+            "schema": {
+              "type": "string"
+            },
+            "example": "12345678-1234-5678-1234-567812345678"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "task_id": {
+                      "type": "string",
+                      "example": "12345678-1234-5678-1234-567812345678"
+                    },
+                    "workflow_id": {
+                      "type": "string",
+                      "example": "12345678-1234-5678-1234-567812345678"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["PENDING", "RUNNING", "COMPLETED", "FAILED", "CANCELED"],
+                      "example": "COMPLETED"
+                    },
+                    "input_params": {
+                      "type": "object",
+                      "example": {
+                        "prompt": "一只可爱的猫",
+                        "negative_prompt": "模糊，低质量"
+                      }
+                    },
+                    "output_data": {
+                      "type": "object",
+                      "example": {
+                        "images": ["http://example.com/image1.png"]
+                      }
+                    },
+                    "submit_time": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2023-10-20T12:34:56.789Z"
+                    },
+                    "start_time": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2023-10-20T12:35:00.000Z"
+                    },
+                    "end_time": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2023-10-20T12:36:30.000Z"
+                    },
+                    "error_message": {
+                      "type": "string",
+                      "example": null
+                    },
+                    "comfyui_url": {
+                      "type": "string",
+                      "example": "http://comfyui:8188"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "任务不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "任务不存在: 12345678-1234-5678-1234-567812345678"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "获取任务状态失败: 错误详情"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "取消任务接口",
+        "description": "取消指定的任务",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "description": "任务ID",
+            "schema": {
+              "type": "string"
+            },
+            "example": "12345678-1234-5678-1234-567812345678"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "任务已取消: 12345678-1234-5678-1234-567812345678"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "任务状态不允许取消",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "任务状态为 COMPLETED，无法取消"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "任务不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "任务不存在: 12345678-1234-5678-1234-567812345678"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "取消任务失败: 错误详情"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflow": {
+      "post": {
+        "summary": "创建工作流接口",
+        "description": "创建一个新的工作流",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "工作流名称",
+                    "example": "文生图工作流"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "工作流描述",
+                    "example": "基于Stable Diffusion的文生图工作流"
+                  },
+                  "workflow": {
+                    "type": "object",
+                    "description": "工作流定义",
+                    "example": {}
+                  },
+                  "api_json": {
+                    "type": "object",
+                    "description": "API JSON定义",
+                    "example": {}
+                  },
+                  "output_nodes": {
+                    "type": "array",
+                    "description": "输出节点列表",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": ["4", "10"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "创建工作流功能待实现"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "创建工作流失败: 错误详情"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflow/{workflow_id}": {
+      "get": {
+        "summary": "获取工作流接口",
+        "description": "获取指定工作流的信息",
+        "parameters": [
+          {
+            "name": "workflow_id",
+            "in": "path",
+            "required": true,
+            "description": "工作流ID",
+            "schema": {
+              "type": "string"
+            },
+            "example": "12345678-1234-5678-1234-567812345678"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "workflow_id": {
+                      "type": "string",
+                      "example": "12345678-1234-5678-1234-567812345678"
+                    },
+                    "name": {
+                      "type": "string",
+                      "example": "文生图工作流"
+                    },
+                    "description": {
+                      "type": "string",
+                      "example": "基于Stable Diffusion的文生图工作流"
+                    },
+                    "workflow": {
+                      "type": "object",
+                      "example": {}
+                    },
+                    "api_json": {
+                      "type": "object",
+                      "example": {}
+                    },
+                    "output_nodes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": ["4", "10"]
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2023-10-20T12:34:56.789Z"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2023-10-20T12:34:56.789Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "工作流不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "工作流不存在: 12345678-1234-5678-1234-567812345678"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "获取工作流失败: 错误详情"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflows": {
+      "get": {
+        "summary": "获取所有工作流列表",
+        "description": "获取系统中所有可用的工作流列表",
+        "responses": {
+          "200": {
+            "description": "成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "workflow_id": {
+                        "type": "string",
+                        "example": "12345678-1234-5678-1234-567812345678"
+                      },
+                      "name": {
+                        "type": "string",
+                        "example": "文生图工作流"
+                      },
+                      "description": {
+                        "type": "string",
+                        "example": "基于Stable Diffusion的文生图工作流"
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2023-10-20T12:34:56.789Z"
+                      },
+                      "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2023-10-20T12:34:56.789Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "获取工作流列表失败: 错误详情"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks": {
+      "get": {
+        "summary": "获取任务列表",
+        "description": "获取系统中的任务列表，支持分页和筛选",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码，从1开始",
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "每页数量",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "任务状态筛选",
+            "schema": {
+              "type": "string",
+              "enum": ["PENDING", "RUNNING", "COMPLETED", "FAILED", "CANCELED"]
+            }
+          },
+          {
+            "name": "workflow_id",
+            "in": "query",
+            "description": "工作流ID筛选",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total": {
+                      "type": "integer",
+                      "description": "总任务数",
+                      "example": 42
+                    },
+                    "page": {
+                      "type": "integer",
+                      "description": "当前页码",
+                      "example": 1
+                    },
+                    "page_size": {
+                      "type": "integer",
+                      "description": "每页数量",
+                      "example": 10
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "task_id": {
+                            "type": "string",
+                            "example": "12345678-1234-5678-1234-567812345678"
+                          },
+                          "workflow_id": {
+                            "type": "string",
+                            "example": "12345678-1234-5678-1234-567812345678"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": ["PENDING", "RUNNING", "COMPLETED", "FAILED", "CANCELED"],
+                            "example": "COMPLETED"
+                          },
+                          "submit_time": {
+                            "type": "string",
+                            "format": "date-time",
+                            "example": "2023-10-20T12:34:56.789Z"
+                          },
+                          "end_time": {
+                            "type": "string",
+                            "format": "date-time",
+                            "example": "2023-10-20T12:36:30.000Z"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "获取任务列表失败: 错误详情"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "TaskStatus": {
+        "type": "string",
+        "enum": ["PENDING", "RUNNING", "COMPLETED", "FAILED", "CANCELED"],
+        "description": "任务状态枚举"
+      },
+      "PromptRequest": {
+        "type": "object",
+        "required": ["workflow_id", "input_params"],
+        "properties": {
+          "workflow_id": {
+            "type": "string",
+            "description": "工作流ID"
+          },
+          "input_params": {
+            "type": "object",
+            "description": "输入参数"
+          }
+        }
+      },
+      "PromptResponse": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "description": "任务ID"
+          }
+        }
+      },
+      "TaskModel": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "description": "任务ID"
+          },
+          "workflow_id": {
+            "type": "string",
+            "description": "工作流ID"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TaskStatus"
+          },
+          "input_params": {
+            "type": "object",
+            "description": "输入参数"
+          },
+          "output_data": {
+            "type": "object",
+            "description": "输出数据"
+          },
+          "submit_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "提交时间"
+          },
+          "start_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "开始时间"
+          },
+          "end_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "结束时间"
+          },
+          "error_message": {
+            "type": "string",
+            "description": "错误信息"
+          },
+          "comfyui_url": {
+            "type": "string",
+            "description": "ComfyUI服务器URL"
+          }
+        }
+      },
+      "WorkflowModel": {
+        "type": "object",
+        "properties": {
+          "workflow_id": {
+            "type": "string",
+            "description": "工作流ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "工作流名称"
+          },
+          "description": {
+            "type": "string",
+            "description": "工作流描述"
+          },
+          "workflow": {
+            "type": "object",
+            "description": "工作流定义"
+          },
+          "api_json": {
+            "type": "object",
+            "description": "API JSON定义"
+          },
+          "output_nodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "输出节点列表"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "更新时间"
+          }
+        }
+      }
+    }
+  }
+}

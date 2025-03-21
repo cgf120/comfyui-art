@@ -1,0 +1,44 @@
+# ComfyUI Art 配置文件
+server:
+  port: 5008
+  domain: "https://cluster01.comfyui.art"
+  web_dir: "/mnt/cpn-pod/comfyui-art"
+# 服务器配置
+servers:
+  - host: "192.168.200.171"
+    docker_api_port: 2375  # Docker API端口
+    gpu_count: 8  # GPU数量
+    start_port: 8188  # ComfyUI启动端口最小值
+    end_port: 9999  # ComfyUI启动端口最大值
+    volumes:
+      - source: "/mnt/nvme/comfyui"  # 宿主机路径
+        target: "/root/ComfyUI"  # 容器内路径
+        mode: "rw"  # 读写模式
+
+# Redis配置
+redis:
+  host: "192.168.200.3"
+  port: 6379
+  password: "Dm2mrAHN"
+  db: 0
+
+# ComfyUI配置
+comfyui:
+  image: "test"
+  tag: "v2"
+
+# Redis键配置
+redis_keys:
+  workflow_queue: "comfyui:workflow:queue"
+  task_queue: "comfyui:task:queue"
+  task_id_prompt_id_map: "comfyui:task:id:prompt:"
+  task_info_prefix: "comfyui:task:info:"
+  workflow_info_prefix: "comfyui:workflow:info:"
+
+# 调度配置
+schedule:
+  max_workers: 8
+  min_workers: 2
+  scale_up_threshold: 3
+  scale_down_threshold: 0
+  comfyui_node_check_interval: 10  # 秒
