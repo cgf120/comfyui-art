@@ -533,7 +533,7 @@ class Scheduler:
                             output_files.append({
                                 "type": file_type,
                                 "filename": filename,
-                                "url":f'{self.config.server.domain}/{task_id}/{filename}'
+                                "url":f'{self.config.server.domain}/{task_id}/output/{filename}'
                             })
                             await self.download_file_2_web_dir(container_url, filename, task_id)
 
@@ -820,7 +820,7 @@ class Scheduler:
                             error_message=f"提交任务失败: {response.status} - {error_text}"
                         )
                         
-                        logger.error(f"提交任务失败: {task_id} -> {container_url}, 状态码: {response.status}")
+                        logger.error(f"提交任务失败: {task_id} -> {container_url}, 状态码: {response.status}, 错误: {error_text}")
             
         except Exception as e:
             logger.error(f"提交任务到容器失败: {str(e)}")
