@@ -118,7 +118,6 @@ async def submit_prompt(request: PromptRequest, background_tasks: BackgroundTask
             output_nodes=workflow.output_nodes,
             status=TaskStatus.PENDING
         )
-        
         # 5. 保存任务信息
         await redis_manager.save_task(task)
         

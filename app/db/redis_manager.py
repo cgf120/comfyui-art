@@ -380,7 +380,7 @@ class RedisManager:
         """
         try:
             # 将任务ID推送到任务队列
-            await self.redis_client.lpush(self.redis_keys.task_queue, task_id)
+            self.redis_client.lpush(self.redis_keys.task_queue, task_id)
             logger.info(f"任务已推送到队列: {task_id}")
             return True
             

@@ -2,9 +2,20 @@ import os
 
 from os import mkdir as os_mkdir
 
-# 从最下级创建目录，防止上级目录没有权限
-def mkdir(path):
-    if not os.path.exists(os.path.dirname(path)):
-        mkdir(os.path.dirname(path))
-    else:
-        os_mkdir(path)
+def download_file(url, path):
+    """
+    下载文件
+    :param url: 文件URL
+    :param path: 保存路径
+    """
+    import requests
+    from requests.exceptions import RequestException
+
+    try:
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+        with open(path, "wb") as file:
+            for chunk in response.iter_content(chunk_size=1024):
+                file.write(chunk)
+    except RequestException as e:
+        raise e

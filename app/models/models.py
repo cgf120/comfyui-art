@@ -16,6 +16,7 @@ class NodeParam(BaseModel):
     """节点参数模型"""
     node_id: str = Field(..., description="节点ID")
     name: str = Field(..., description="参数名称")
+    file_url:str = Field(None, description="文件URL")
     value: Any = Field(..., description="参数值")
 
 
@@ -43,6 +44,7 @@ class TaskModel(BaseModel):
     task_id: str = Field(..., description="任务ID")
     workflow_id: str = Field(..., description="工作流ID")
     input_params: List[NodeParam] = Field(default_factory=list, description="输入参数列表")
+    input_files: List[str] = Field(default_factory=list, description="输入文件列表") # 参数如果是文件，存储文件名
     output_nodes: List[str] = Field(default_factory=list, description="输出节点列表")
     comfyui_url: Optional[str] = Field(None, description="ComfyUI URL")
     server_host: Optional[str] = Field(None, description="服务器主机")

@@ -23,6 +23,7 @@ from app import utils
 from app.config.config_manager import AppConfig
 from app.models.models import ComfyUIContainerModel, ContainerStatus, TaskStatus
 from app.db.redis_manager import RedisManager
+from app.utils import download_file
 
 
 class Scheduler:
@@ -547,7 +548,7 @@ class Scheduler:
         async with aiohttp.ClientSession() as session:
             base_file = f'{self.config.server.web_dir}/{task_id}/{filename}'
             directory_path = os.path.dirname(base_file)
-            utils.mkdir(directory_path)
+            os.makedirs(directory_path, exist_ok=True)
             async with session.get(f'{container_url}/view?filename={filename}') as resp:
                 with open(base_file, 'wb') as f:
                     while True:
@@ -718,6 +719,15 @@ class Scheduler:
             if not task:
                 logger.error(f"找不到任务信息: {task_id}")
                 return
+
+            # 创建任务目录
+            task_dir = f"{self.config.server.web_dir}/{task_id}"
+            task_input_dir = f"{task_dir}/input"
+            task_output_dir = f"{task_dir}/output"
+            if not os.path.exists(task_dir):
+                os.makedirs(task_input_dir, exist_ok=True)
+                os.makedirs(task_output_dir, exist_ok=True)
+
             
             # 获取容器信息
             container = self.containers.get(container_url)
@@ -741,6 +751,25 @@ class Scheduler:
                 if param.node_id in api_json:
                     node = api_json[param.node_id]
                     if "inputs" in node and param.name in node["inputs"]:
+                        # 如果有文件地址，代表是文件，就下载文件然后替换名称
+                        if param.file_url:
+                            # 下载到临时文件，然后上传到comfyui容器
+                            download_file(param.file_url,f'{task_input_dir}/{param.value}')
+                            # 上传文件到容器
+                            async with aiohttp.ClientSession() as session:
+                                async with session.post(
+                                    f"{container_url}/upload/image",
+                                    data={
+                                        "image": open(f'{task_input_dir}/{param.value}', 'rb'),
+                                        "overwrite": "true"
+                                    }
+                                ) as response:
+                                    if response.status == 200:
+                                        result = await response.json()
+                                        param.value = result["name"]
+                                    else:
+                                        error_text = await response.text()
+                                        logger.error(f"上传文件失败: {param.name}, 状态码: {response.status}, 错误: {error_text}")
                         node["inputs"][param.name] = param.value
 
             prompt_data = {
