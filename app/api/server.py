@@ -102,7 +102,7 @@ async def submit_prompt(request: PromptRequest, background_tasks: BackgroundTask
             raise HTTPException(status_code=404, detail=f"工作流不存在: {request.workflow_id}")
 
         # 2. 根据工作流校验参数是否合法
-        workflow.validate_params(request.input_params)
+        workflow.check_input_params(request.input_params)
 
         # 3. 随机生成一个task_id
         task_id = str(uuid.uuid4())
