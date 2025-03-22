@@ -19,15 +19,35 @@ class NodeParam(BaseModel):
     file_url:str = Field(None, description="文件URL")
     value: Any = Field(..., description="参数值")
 
+class InputNode(BaseModel):
+    """输入节点模型"""
+    node_id: str = Field(..., description="节点ID")
+    name: str = Field(..., description="节点名称")
+    type: str = Field(..., description="节点类型") # file or text
+    choices: List[str] = Field(default_factory=list, description="节点选择项")
+
+
 
 class WorkflowModel(BaseModel):
     """工作流模型"""
     workflow_id: str = Field(..., description="工作流ID")
     api_json: Dict[str, Any] = Field(..., description="API JSON数据")
     workflow: Dict[str, Any] = Field(..., description="工作流数据")
+    input_nodes: Dict[str,InputNode] = Field(default_factory=list, description="输入节点列表")
     output_nodes: List[str] = Field(default_factory=list, description="输出节点列表")
     created_at: datetime = Field(default_factory=datetime.now, description="创建时间")
     updated_at: datetime = Field(default_factory=datetime.now, description="更新时间")
+
+    def check_input_params(self, input_params: List[NodeParam]):
+        """检查输入参数"""
+        for param in input_params:
+            if param.node_id not in self.input_nodes:
+                return False, f"节点不存在：{param.node_id}"
+            if len(self.input_nodes[param.node_id].choices) > 0 and param.value not in self.input_nodes[param.node_id].choices:
+                return False, f"节点选择项不匹配：{param.node_id}"
+            if self.input_nodes[param.node_id].type == "file" and not param.file_url:
+                return False, f"文件参数缺失文件url：{param.node_id}"
+        return True, None
 
 
 class TaskStatus(str, Enum):
