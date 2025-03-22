@@ -233,12 +233,15 @@ async def create_workflow(workflow_data: Dict[str, Any]):
         if workflow_data['input_nodes'] is None:
             raise HTTPException(status_code=400, detail="输入节点不能为空")
 
+        workflow_id = str(uuid.uuid4())
+
+        workflow_data['workflow_id'] = workflow_id
 
         worrkflow = WorkflowModel(**workflow_data)
 
         await redis_manager.save_workflow(worrkflow)
 
-        return {"message": "创建工作流功能待实现"}
+        return {"message": "创建工作流功能待实现","workflow_id": workflow_id}
 
     except Exception as e:
         logger.error(f"创建工作流失败: {str(e)}")
