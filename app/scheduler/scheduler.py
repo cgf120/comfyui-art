@@ -77,7 +77,7 @@ class Scheduler:
             asyncio.create_task(self._container_monitoring_loop())
             
             # 启动自动扩缩容循环
-            asyncio.create_task(self._auto_scaling_loop())
+            # asyncio.create_task(self._auto_scaling_loop())
             
             logger.info("调度器启动成功")
             
