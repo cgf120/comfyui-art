@@ -546,7 +546,7 @@ class Scheduler:
 
     async def download_file_2_web_dir(self, container_url:str, filename:str,task_id:str):
         async with aiohttp.ClientSession() as session:
-            base_file = f'{self.config.server.web_dir}/{task_id}/{filename}'
+            base_file = f'{self.config.server.web_dir}/{task_id}/output/{filename}'
             directory_path = os.path.dirname(base_file)
             os.makedirs(directory_path, exist_ok=True)
             async with session.get(f'{container_url}/view?filename={filename}') as resp:
