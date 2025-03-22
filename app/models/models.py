@@ -16,7 +16,7 @@ class NodeParam(BaseModel):
     """节点参数模型"""
     node_id: str = Field(..., description="节点ID")
     name: str = Field(..., description="参数名称")
-    file_url:str = Field(None, description="文件URL")
+    file_url:Optional[Any] = Field(None, description="文件URL")
     value: Any = Field(..., description="参数值")
 
 class InputNode(BaseModel):
@@ -24,7 +24,7 @@ class InputNode(BaseModel):
     node_id: str = Field(..., description="节点ID")
     name: str = Field(..., description="节点名称")
     type: str = Field(..., description="节点类型") # file or text
-    choices: List[str] = Field(default_factory=list, description="节点选择项")
+    choices: Optional[List[str]] = Field(default_factory=list, description="节点选择项")
 
 
 

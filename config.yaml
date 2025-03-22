@@ -38,7 +38,7 @@ redis_keys:
 # 调度配置
 schedule:
   max_workers: 8
-  min_workers: 2
+  min_workers: 8
   scale_up_threshold: 3
   scale_down_threshold: 0
   comfyui_node_check_interval: 10  # 秒
