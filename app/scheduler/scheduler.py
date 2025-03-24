@@ -243,7 +243,7 @@ class Scheduler:
                 ports={"8188": port},
                 volumes=volumes,
                 runtime="nvidia",
-                environment=[f"NVIDIA_VISIBLE_DEVICES=all"]  # 确保容器在后台运行
+                environment=[f"NVIDIA_VISIBLE_DEVICES={port-8188}"]  # 确保容器在后台运行
             )
             
             # 创建容器模型
@@ -516,7 +516,7 @@ class Scheduler:
             task_id = await self.redis_manager.get_task_id_by_prompt_id(prompt_id)
             task = await self.redis_manager.get_task(task_id)
             # 检查是否是输出节点
-            if task and task.workflow and task.output_nodes and node_id in task.output_nodes:
+            if task and task.output_nodes and node_id in task.output_nodes:
                 await self.redis_manager.update_task_status(task_id, TaskStatus.COMPLETED)
                 await self.redis_manager.update_task_progress(task_id, 1.0)  # 设置进度为100%
 
@@ -774,12 +774,7 @@ class Scheduler:
 
             prompt_data = {
                 "prompt":api_json,
-                "client_id":self.containers[container_url].client_id,
-                "extra_data":{
-                    "extra_pnginfo":{
-                        "workflow":task.workflow,
-                    },
-                }
+                "client_id":self.containers[container_url].client_id
             }
             
             # 提交任务到ComfyUI
@@ -877,17 +872,23 @@ class Scheduler:
                         # 检查容器是否可访问
                         try:
                             async with aiohttp.ClientSession() as session:
-                                async with session.get(f"{container_url}/system_stats", timeout=5) as response:
+                                async with session.get(f"{container_url}/system_stats", timeout=self.config.schedule.comfyui_node_retry_interval) as response:
                                     if response.status != 200:
                                         # 容器不可访问
                                         logger.warning(f"容器不可访问: {container_url}, 状态码: {response.status}")
                                         container.status = ContainerStatus.ERROR
+                                        container.retry_count += 1
+                                    else:
+                                        # 容器可访问，重置重试次数
+                                        container.retry_count = 0
+                                        container.status = ContainerStatus.RUNNING
                         except Exception:
                             # 容器不可访问
                             logger.warning(f"容器不可访问: {container_url}")
                             container.status = ContainerStatus.ERROR
+                            container.retry_count += 1
                     
-                    elif container.status == ContainerStatus.ERROR:
+                    elif container.status == ContainerStatus.ERROR and container.retry_count > self.config.schedule.comfyui_node_max_retry_count:
                         # 尝试重新创建容器
                         logger.info(f"尝试重新创建容器: {container_url}")
                         await self._remove_container(container_url)

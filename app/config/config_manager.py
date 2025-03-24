@@ -59,7 +59,9 @@ class ScheduleConfig(BaseModel):
     min_workers: int = Field(1, description="最小工作实例数")
     scale_up_threshold: int = Field(3, description="扩容阈值")
     scale_down_threshold: int = Field(0, description="缩容阈值")
-    comfyui_node_check_interval: int = Field(10, description="ComfyUI节点检查间隔（秒）")
+    comfyui_node_check_interval: int = Field(10, description="ComfyUI节点检查间隔(秒)")
+    comfyui_node_retry_interval: int = Field(5, description="ComfyUI节点重试间隔(秒)")
+    comfyui_node_max_retry_count: int = Field(3, description="ComfyUI节点最大重试次数")
 class Server(BaseModel):
     port:int = Field(8000,description="服务器端口")
     domain:str = Field("localhost",description="服务器域名")
